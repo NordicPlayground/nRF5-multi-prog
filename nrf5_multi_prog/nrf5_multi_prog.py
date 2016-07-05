@@ -80,30 +80,29 @@ class nRF5MultiFlash(object):
         if not self.family:
             self.family = 'NRF51'
 
-        if self.family is 'NRF51':
-            self.PAGE_SIZE = 0x400
-        else:
-            self.PAGE_SIZE = 0x1000
-
-    def byte_lists_equal(self, data, read_data):
-        for i in xrange(len(data)):
-            if data[i] != read_data[i]:
-                return False
-        return True
-
-    def connect_to_devices(self):
         if not self.snrs:
             tmp = MultiAPI.MultiAPI('NRF51')
             tmp.open()
             self.snrs = tmp.enum_emu_snr()
             tmp.close()
 
-        for device in self.snrs:
-            self.nRF5_instances[device] = MultiAPI.MultiAPI(self.family)
-            self.nRF5_instances[device].open()
-            self.nRF5_instances[device].connect_to_emu_with_snr(device)
+        if self.family is 'NRF51':
+            self.PAGE_SIZE = 0x400
+        else:
+            self.PAGE_SIZE = 0x1000
 
-    def program_device(self, device):
+    def _byte_lists_equal(self, data, read_data):
+        for i in xrange(len(data)):
+            if data[i] != read_data[i]:
+                return False
+        return True
+
+    def _connect_to_device(self, device):
+        self.nRF5_instances[device] = MultiAPI.MultiAPI(self.family)
+        self.nRF5_instances[device].open()
+        self.nRF5_instances[device].connect_to_emu_with_snr(device)
+
+    def _program_device(self, device):
         if self.erase_all:
             self.nRF5_instances[device].recover()
         if self.sectors_and_uicr_erase:
@@ -125,25 +124,30 @@ class nRF5MultiFlash(object):
 
             if self.verify:
                 read_data = self.nRF5_instances[device].read(start_addr, len(data))
-                assert (self.byte_lists_equal(data, read_data)), 'Verify failed. Data readback from memory does not match data written.'
+                assert (self._byte_lists_equal(data, read_data)), 'Verify failed. Data readback from memory does not match data written.'
 
             if self.systemreset:
                 self.nRF5_instances[device].sys_reset()
 
-    def cleanup(self):
-         for device in self.snrs:
-            self.nRF5_instances[device].disconnect_from_emu()
-            self.nRF5_instances[device].close()
+    def _cleanup(self, device):
+        self.nRF5_instances[device].disconnect_from_emu()
+        self.nRF5_instances[device].close()
+
+    # Public methods.
+
+    def perform_command(self, device):
+        self._connect_to_device(device)
+        self._program_device(device)
+        self._cleanup(device)
 
 def main():
     cli = CLI()
     args = cli.run()
 
     nRF = nRF5MultiFlash(args)
-    nRF.connect_to_devices()
+
     pool = ThreadPool(len(nRF.snrs))
-    pool.map(nRF.program_device, nRF.snrs)
-    nRF.cleanup()
+    pool.map(nRF.perform_command, nRF.snrs)
 
 if __name__ == '__main__':
     main()
