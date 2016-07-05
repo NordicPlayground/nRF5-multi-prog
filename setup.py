@@ -15,7 +15,7 @@ def read_requirements(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).readlines()
 
 setup(
-    name ='pynrfjprog',
+    name ='nRF5_multi_prog',
     version = 0.0.1,
     description = 'Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe',
     long_description=read('README.md'),

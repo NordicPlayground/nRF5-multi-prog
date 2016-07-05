@@ -12,7 +12,7 @@ PAGE_SIZE = 0x100 # TODO: This is only nRF51
 
 class CLI(object):
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description='description', epilog='epilog')
+        self.parser = argparse.ArgumentParser(description='Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe', epilog='https://github.com/mjdietzx/nRF5-multi-prog')
         self.subparsers = self.parser.add_subparsers(dest='command')
         self._add_program_command()
 
@@ -137,9 +137,8 @@ def main():
 
     nRF = nRF5MultiFlash(args)
     nRF.connect_to_devices()
-    pool = ThreadPool(4)
-    results = pool.map(nRF.program_device, nRF.snrs)
-    print(nRF.snrs)
+    pool = ThreadPool(len(nRF.snrs))
+    pool.map(nRF.program_device, nRF.snrs)
 
 if __name__ == '__main__':
     main()
