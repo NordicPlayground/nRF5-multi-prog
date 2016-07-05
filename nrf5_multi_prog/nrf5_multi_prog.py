@@ -9,6 +9,8 @@ class CLI(object):
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe', epilog='https://github.com/mjdietzx/nRF5-multi-prog')
         self.subparsers = self.parser.add_subparsers(dest='command')
+        self.args = None
+
         self._add_program_command()
 
     def run(self):
@@ -70,7 +72,7 @@ class nRF5MultiFlash(object):
         self.nRF5_instances = {}
         self.erase_all = args.eraseall
         self.family = args.family
-        self.file = args.file # 'test\\resources\\s110_softdevice.hex'
+        self.file = args.file
         self.sectors_erase = args.sectorserase
         self.sectors_and_uicr_erase = args.sectorsanduicrerase
         self.snrs = args.snrs
