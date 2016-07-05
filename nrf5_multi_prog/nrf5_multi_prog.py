@@ -34,7 +34,7 @@ class CLI(object):
         self._add_sectors_erase_argument(erase_before_flash_group)
         self._add_sectorsuicr_erase_argument(erase_before_flash_group)
 
-    def _add_reset_group(self, parser):
+    def _add_reset_group(self, parser): # TODO: add other reset options.
         reset_group = parser.add_mutually_exclusive_group()
         self._add_sysreset_argument(reset_group)
 
@@ -44,10 +44,10 @@ class CLI(object):
         parser.add_argument('-e', '--eraseall', action='store_true', help='Erase all user FLASH including UICR and disable any protection (this is actually recover()).')
 
     def _add_family_argument(self, parser):
-        parser.add_argument('--family', type=str, help='The family of the target device.', required=False, choices=['NRF51', 'NRF52'])
+        parser.add_argument('--family', type=str, help='The family of the target device. Defaults to NRF51.', required=False, choices=['NRF51', 'NRF52'])
 
     def _add_file_argument(self, parser):
-        parser.add_argument('-f', '--file', help='The hex file to be used in this operation.', required=True)
+        parser.add_argument('-f', '--file', help='The hex file to be programmed to all devices.', required=True)
 
     def _add_sectors_erase_argument(self, parser):
         parser.add_argument('-se', '--sectorserase', action='store_true', help='Erase all sectors that FILE contains data in before programming.')
@@ -56,7 +56,7 @@ class CLI(object):
         parser.add_argument('-u', '--sectorsanduicrerase', action='store_true', help='Erase all sectors that FILE contains data in and the UICR (unconditionally) before programming.')
 
     def _add_snrs_argument(self, parser):
-        parser.add_argument('-s', '--snrs', type=int, nargs='+', help='Selects the debuggers with the given serial numbers among all those connected to the PC for the operation.')
+        parser.add_argument('-s', '--snrs', type=int, nargs='+', help='Selects the debuggers with the given serial numbers among all those connected to the PC for the operation. Defaults to all snrs with be selected.')
 
     def _add_sysreset_argument(self, parser):
         parser.add_argument('-r', '--systemreset', action='store_true', help='Executes a system reset.')
@@ -106,7 +106,7 @@ class nRF5MultiFlash(object):
 
     def _program_device(self, device):
         if self.erase_all:
-            self.nRF5_instances[device].recover()
+            self.nRF5_instances[device].recover() # NOTE: using recover() instead of erase_all().
         if self.sectors_and_uicr_erase:
             self.nRF5_instances[device].erase_uicr()
 
@@ -120,7 +120,7 @@ class nRF5MultiFlash(object):
                 for page in range(start_page, end_page + 1):
                     self.nRF5_instances[device].erase_page(page * self.PAGE_SIZE)
 
-            data = self.hex_file.tobinarray(start=start_addr, size=(size))
+            data = self.hex_file.tobinarray(start=start_addr, size=(size)) # TODO: this can be optimized.
             self.nRF5_instances[device].write(start_addr, data.tolist(), True)
 
             if self.verify:
