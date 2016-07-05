@@ -38,5 +38,5 @@ setup(
     ],
     keywords = 'nRF5 nRF51 nRF52 nrfjprog pynrfjprog Nordic Semiconductor SEGGER JLink',
     install_requires = read_requirements('requirements.txt'),
-    packages = find_packages()
+    packages = ['nrf5_multi_prog']
 )
