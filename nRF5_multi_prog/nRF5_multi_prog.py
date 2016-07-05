@@ -2,7 +2,7 @@ import argparse
 from intelhex import IntelHex
 from multiprocessing.dummy import Pool as ThreadPool
 
-from pynrfjprog import MultiAPI as API
+from pynrfjprog import MultiAPI
 
 
 class CLI(object):
@@ -93,13 +93,13 @@ class nRF5MultiFlash(object):
 
     def connect_to_devices(self):
         if not self.snrs:
-            tmp = API.MultiAPI('NRF51')
+            tmp = MultiAPI.MultiAPI('NRF51')
             tmp.open()
             self.snrs = tmp.enum_emu_snr()
             tmp.close()
 
         for device in self.snrs:
-            self.nRF5_instances[device] = API.MultiAPI(self.family)
+            self.nRF5_instances[device] = MultiAPI.MultiAPI(self.family)
             self.nRF5_instances[device].open()
             self.nRF5_instances[device].connect_to_emu_with_snr(device)
 
