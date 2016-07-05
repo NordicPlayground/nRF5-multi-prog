@@ -1,13 +1,8 @@
-"""
-
-"""
 import argparse
 from intelhex import IntelHex
 from multiprocessing.dummy import Pool as ThreadPool
 
 from pynrfjprog import MultiAPI as API
-
-PAGE_SIZE = 0x100 # TODO: This is only nRF51
 
 
 class CLI(object):
@@ -82,6 +77,14 @@ class nRF5MultiFlash(object):
         self.systemreset = args.systemreset
         self.verify = args.verify
 
+        if not self.family:
+            self.family = 'NRF51'
+
+        if self.family is 'NRF51':
+            self.PAGE_SIZE = 0x400
+        else:
+            self.PAGE_SIZE = 0x1000
+
     def byte_lists_equal(self, data, read_data):
         for i in xrange(len(data)):
             if data[i] != read_data[i]:
@@ -89,20 +92,16 @@ class nRF5MultiFlash(object):
         return True
 
     def connect_to_devices(self):
-        tmp = API.MultiAPI('NRF51')
-        tmp.open()
-
-        if not self.family:
-            self.family = 'NRF51'
         if not self.snrs:
+            tmp = API.MultiAPI('NRF51')
+            tmp.open()
             self.snrs = tmp.enum_emu_snr()
+            tmp.close()
 
         for device in self.snrs:
             self.nRF5_instances[device] = API.MultiAPI(self.family)
             self.nRF5_instances[device].open()
             self.nRF5_instances[device].connect_to_emu_with_snr(device)
-
-        tmp.close()
 
     def program_device(self, device):
         if self.erase_all:
@@ -116,10 +115,10 @@ class nRF5MultiFlash(object):
             size = end_addr - start_addr
 
             if self.sectors_erase or self.sectors_and_uicr_erase:
-                start_page = int(start_addr / PAGE_SIZE)
-                end_page = int(end_addr / PAGE_SIZE)
+                start_page = int(start_addr / self.PAGE_SIZE)
+                end_page = int(end_addr / self.PAGE_SIZE)
                 for page in range(start_page, end_page + 1):
-                    self.nRF5_instances[device].erase_page(page * PAGE_SIZE)
+                    self.nRF5_instances[device].erase_page(page * self.PAGE_SIZE)
 
             data = hex_file.tobinarray(start=start_addr, size=(size))
             self.nRF5_instances[device].write(start_addr, data.tolist(), True)
@@ -131,6 +130,11 @@ class nRF5MultiFlash(object):
             if self.systemreset:
                 self.nRF5_instances[device].sys_reset()
 
+    def cleanup(self):
+         for device in self.snrs:
+            self.nRF5_instances[device].disconnect_from_emu()
+            self.nRF5_instances[device].close()
+
 def main():
     cli = CLI()
     args = cli.run()
@@ -139,6 +143,7 @@ def main():
     nRF.connect_to_devices()
     pool = ThreadPool(len(nRF.snrs))
     pool.map(nRF.program_device, nRF.snrs)
+    nRF.cleanup()
 
 if __name__ == '__main__':
     main()
