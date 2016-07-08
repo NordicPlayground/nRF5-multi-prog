@@ -5,7 +5,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 import os
 import sys
 
-from pynrfjprog import MultiAPI
+from pynrfjprog import MultiAPI as API
 
 
 # Module multiprocessing is organized differently in Python 3.4+
@@ -49,12 +49,19 @@ class CLI(object):
         self.subparsers = self.parser.add_subparsers(dest='command')
         self.args = None
 
+        self._add_recover_command()
         self._add_program_command()
 
     def run(self):
         return self.parser.parse_args()
 
     # Top level commands.
+
+    def _add_recover_command(self):
+        erase_parser = self.subparsers.add_parser('recover', help='Erase all user FLASH including UICR and disables any enabled readback protection/locking.')
+
+        self._add_family_argument(erase_parser)
+        self._add_snrs_argument(erase_parser)
 
     def _add_program_command(self):
         program_parser = self.subparsers.add_parser('program', help='Programs the device.')
@@ -81,7 +88,7 @@ class CLI(object):
     # Arguments.
 
     def _add_eraseall_argument(self, parser):
-        parser.add_argument('-e', '--eraseall', action='store_true', help='Erase all user FLASH including UICR and disable any protection (this is actually recover()).')
+        parser.add_argument('-e', '--eraseall', action='store_true', help='Erase all user FLASH including UICR.')
 
     def _add_family_argument(self, parser):
         parser.add_argument('--family', type=str, help='The family of the target device. Defaults to NRF51.', required=False, choices=['NRF51', 'NRF52'])
@@ -108,28 +115,25 @@ class CLI(object):
 class nRF5MultiFlash(object):
     def __init__(self, args):
         self.nRF5_instances = {}
-        self.erase_all = args.eraseall
-        self.family = args.family
-        self.file = args.file
-        self.sectors_erase = args.sectorserase
-        self.sectors_and_uicr_erase = args.sectorsanduicrerase
-        self.snrs = args.snrs
-        self.systemreset = args.systemreset
-        self.verify = args.verify
+        self.args = args
 
-        if not self.family:
+        self.family = args.family
+        self.snrs = args.snrs
+
+        if not self.args.family:
             self.family = 'NRF51'
 
-        if not self.snrs:
-            with MultiAPI.MultiAPI('NRF51') as nrf:
+        if not self.args.snrs:
+            with API.MultiAPI('NRF51') as nrf:
                 self.snrs = nrf.enum_emu_snr()
 
-        if self.family is 'NRF51':
+        if self.family == 'NRF51':
             self.PAGE_SIZE = 0x400
         else:
             self.PAGE_SIZE = 0x1000
 
-        self.hex_file = IntelHex(self.file)
+        if args.command == 'program':
+            self.hex_file = IntelHex(self.file)
 
     def _byte_lists_equal(self, data, read_data):
         for i in xrange(len(data)):
@@ -138,21 +142,24 @@ class nRF5MultiFlash(object):
         return True
 
     def _connect_to_device(self, device):
-        self.nRF5_instances[device] = MultiAPI.MultiAPI(self.family)
+        self.nRF5_instances[device] = API.MultiAPI(self.family)
         self.nRF5_instances[device].open()
         self.nRF5_instances[device].connect_to_emu_with_snr(device)
 
+    def _recover_device(self, device):
+        self.nRF5_instances[device].recover()
+
     def _program_device(self, device):
-        if self.erase_all:
-            self.nRF5_instances[device].recover() # NOTE: using recover() instead of erase_all().
-        if self.sectors_and_uicr_erase:
+        if self.args.erase_all:
+            self.nRF5_instances[device].erase_all()
+        if self.args.sectors_and_uicr_erase:
             self.nRF5_instances[device].erase_uicr()
 
         for segment in self.hex_file.segments():
             start_addr, end_addr = segment
             size = end_addr - start_addr
 
-            if self.sectors_erase or self.sectors_and_uicr_erase:
+            if self.args.sectors_erase or self.args.sectors_and_uicr_erase:
                 start_page = int(start_addr / self.PAGE_SIZE)
                 end_page = int(end_addr / self.PAGE_SIZE)
                 for page in range(start_page, end_page + 1):
@@ -161,11 +168,11 @@ class nRF5MultiFlash(object):
             data = self.hex_file.tobinarray(start=start_addr, size=(size)) # TODO: this can be optimized.
             self.nRF5_instances[device].write(start_addr, data.tolist(), True)
 
-            if self.verify:
+            if self.args.verify:
                 read_data = self.nRF5_instances[device].read(start_addr, len(data))
                 assert (self._byte_lists_equal(data, read_data)), 'Verify failed. Data readback from memory does not match data written.'
 
-        if self.systemreset:
+        if self.args.systemreset:
             self.nRF5_instances[device].sys_reset()
             self.nRF5_instances[device].go()
 
@@ -178,7 +185,12 @@ class nRF5MultiFlash(object):
 
     def perform_command(self, device):
         self._connect_to_device(device)
-        self._program_device(device)
+
+        if self.args.command == 'recover':
+            self._recover_device(device)
+        elif self.args.command == 'program':
+            self._program_device(device)
+
         self._cleanup(device)
 
 
