@@ -2,11 +2,11 @@ import argparse
 from intelhex import IntelHex
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
+import os
+import sys
 
 from pynrfjprog import MultiAPI
 
-import os
-import sys
 
 # Module multiprocessing is organized differently in Python 3.4+
 try:
@@ -45,7 +45,7 @@ if sys.platform.startswith('win'):
 
 class CLI(object):
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description='Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe', epilog='https://github.com/mjdietzx/nRF5-multi-prog')
+        self.parser = argparse.ArgumentParser(description='Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe', epilog='https://github.com/NordicSemiconductor/nRF5-multi-prog')
         self.subparsers = self.parser.add_subparsers(dest='command')
         self.args = None
 
@@ -121,10 +121,8 @@ class nRF5MultiFlash(object):
             self.family = 'NRF51'
 
         if not self.snrs:
-            tmp = MultiAPI.MultiAPI('NRF51')
-            tmp.open()
-            self.snrs = tmp.enum_emu_snr()
-            tmp.close()
+            with MultiAPI.MultiAPI('NRF51') as nrf:
+                self.snrs = nrf.enum_emu_snr()
 
         if self.family is 'NRF51':
             self.PAGE_SIZE = 0x400
@@ -167,8 +165,10 @@ class nRF5MultiFlash(object):
                 read_data = self.nRF5_instances[device].read(start_addr, len(data))
                 assert (self._byte_lists_equal(data, read_data)), 'Verify failed. Data readback from memory does not match data written.'
 
-            if self.systemreset:
-                self.nRF5_instances[device].sys_reset()
+        if self.systemreset:
+            self.nRF5_instances[device].sys_reset()
+            self.nRF5_instances[device].go()
+
 
     def _cleanup(self, device):
         self.nRF5_instances[device].disconnect_from_emu()
@@ -180,6 +180,7 @@ class nRF5MultiFlash(object):
         self._connect_to_device(device)
         self._program_device(device)
         self._cleanup(device)
+
 
 def main():
     cli = CLI()
