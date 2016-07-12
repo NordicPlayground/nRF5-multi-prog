@@ -20,7 +20,7 @@ fi
 if hash virtualenv 2>/dev/null; then
   # Set up virtualenv, unless it is already set up.
   if [[ ! -a venv ]]; then
-    virtualenv venv >/dev/null
+    virtualenv --python=python2 venv >/dev/null
   fi
   source venv/bin/activate
 else
