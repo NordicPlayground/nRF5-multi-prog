@@ -10,6 +10,7 @@ esac
 # Where we want to put the executable
 bin_dir="bin"
 bin_name=nRF5-multi-prog-$platform
+python_main=nrf5_multi_prog/nrf5_multi_prog.py 
 
 if !hash pip 2>/dev/null; then
   echo "You need to have 'pip' installed."
@@ -32,11 +33,12 @@ else
 fi
 
 pip install -r requirements.txt >/dev/null
+pip install pyinstaller >/dev/null
 
 if [[ ! -a $bin_dir ]]; then
   mkdir $bin_dir
 fi
 
 # Overwrite file, or should we check and prompt?
-pyinstaller -F src/rtt-logger.py --name $bin_name --log-level ERROR
+pyinstaller -F $python_main --name $bin_name --log-level ERROR
 mv dist/$bin_name bin/
