@@ -133,7 +133,7 @@ class nRF5MultiFlash(object):
             self.PAGE_SIZE = 0x1000
 
         if args.command == 'program':
-            self.hex_file = IntelHex(self.file)
+            self.hex_file = IntelHex(args.file)
 
     def _byte_lists_equal(self, data, read_data):
         for i in xrange(len(data)):
@@ -150,16 +150,16 @@ class nRF5MultiFlash(object):
         self.nRF5_instances[device].recover()
 
     def _program_device(self, device):
-        if self.args.erase_all:
+        if self.args.eraseall:
             self.nRF5_instances[device].erase_all()
-        if self.args.sectors_and_uicr_erase:
+        if self.args.sectorsanduicrerase:
             self.nRF5_instances[device].erase_uicr()
 
         for segment in self.hex_file.segments():
             start_addr, end_addr = segment
             size = end_addr - start_addr
 
-            if self.args.sectors_erase or self.args.sectors_and_uicr_erase:
+            if self.args.sectorserase or self.args.sectorsanduicrerase:
                 start_page = int(start_addr / self.PAGE_SIZE)
                 end_page = int(end_addr / self.PAGE_SIZE)
                 for page in range(start_page, end_page + 1):
