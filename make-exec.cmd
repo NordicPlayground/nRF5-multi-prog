@@ -1,12 +1,17 @@
+:: Name:     make-exec.cmd
+:: Purpose:  Bundles source into a single exe.
+::
+:: Note:     See make-exec.sh for Linux/OS X.
+::           This script assumes a Windows machine with git, 32-bit Python 2.7, 3.4 or 3.5, and pip installed.
+
 @echo off
+setlocal
 
-REM Assumes we are running this script on Windows.
+set bin_dir=bin\
+set bin_name=nRF5-multi-prog
+set python_main=nrf5_multi_prog/nrf5_multi_prog.py
 
-SET bin_dir=bin\
-SET bin_name=nRF5-multi-prog
-SET python_main=nrf5_multi_prog/nrf5_multi_prog.py
-
-REM TODO: Check Python version, pip, and set up virtual environment.
+rem TODO: Check Python version, pip, and set up virtual environment.
 
 echo pip installing python modules required by %python_main%...
 pip install -r requirements.txt > NUL
@@ -14,7 +19,7 @@ pip install -r requirements.txt > NUL
 echo pip installing pyinstaller...
 pip install pyinstaller > NUL
 
-IF EXIST %bin_dir% rm -rf %bin_dir%
+if exist %bin_dir% rm -rf %bin_dir%
 
 echo bundling %python_main% as %bin_name%.exe using pyinstaller...
 pyinstaller -F %python_main% --name %bin_name% --log-level ERROR --clean
