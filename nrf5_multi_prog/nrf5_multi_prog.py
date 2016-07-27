@@ -210,7 +210,7 @@ if __name__ == '__main__':
     elif sys.platform.lower().startswith('linux'):
         pass
     elif sys.platform.startswith('dar'):
-        os.environ['PATH'] = '/usr/local/bin/' + ';' + os.environ['PATH']
+        os.environ['PATH'] = '/usr/local/bin/nrfjprog/' + ';' + os.environ['PATH']
 
     multiprocessing.freeze_support()
     main()
