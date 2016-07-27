@@ -210,7 +210,7 @@ if __name__ == '__main__':
     elif sys.platform.lower().startswith('linux'):
         pass
     elif sys.platform.startswith('dar'):
-        os.environ['PATH'] = '/usr/local/bin/nrfjprog/' + ';' + os.environ['PATH']
+        os.environ['PATH'] = '/usr/local/Caskroom/nrf5x-command-line-tools/8.3.0/nrfjprog/' + ';' + os.environ['PATH']
 
     multiprocessing.freeze_support()
     main()
