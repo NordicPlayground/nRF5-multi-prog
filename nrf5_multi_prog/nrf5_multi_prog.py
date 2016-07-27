@@ -204,5 +204,13 @@ def main():
     pool.map(nRF.perform_command, nRF.snrs)
 
 if __name__ == '__main__':
+
+    if sys.platform.lower().startswith('win'):
+        os.environ['PATH'] = 'C:\\Program Files (x86)\\Nordic Semiconductor\\nrf5x\\bin\\' + ';' + os.environ['PATH']
+    elif sys.platform.lower().startswith('linux'):
+        pass
+    elif sys.platform.startswith('dar'):
+        os.environ['PATH'] = '/usr/local/bin/' + ';' + os.environ['PATH']
+
     multiprocessing.freeze_support()
     main()
