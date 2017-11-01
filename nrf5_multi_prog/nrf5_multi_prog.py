@@ -45,7 +45,7 @@ if sys.platform.startswith('win'):
 
 class CLI(object):
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description='Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe', epilog='https://github.com/NordicSemiconductor/nRF5-multi-prog')
+        self.parser = argparse.ArgumentParser(description='Program multiple nRF5 devices concurrently with this nrfjprog inspired python module/exe', epilog='https://github.com/NordicPlayground/nRF5-multi-prog')
         self.subparsers = self.parser.add_subparsers(dest='command')
         self.args = None
 
